@@ -109,38 +109,7 @@ class MultiAgentSearchAgent(Agent):
         self.index = 0 # Pacman is always agent index 0
         self.evaluationFunction = util.lookup(evalFn, globals())
         self.depth = int(depth)
-'''
-class MinimaxAgent(MultiAgentSearchAgent):
-    """
-    Your minimax agent (question 2)
-    """
 
-    def getAction(self, gameState: GameState):
-        """
-        Returns the minimax action from the current gameState using self.depth
-        and self.evaluationFunction.
-
-        Here are some method calls that might be useful when implementing minimax.
-
-        gameState.getLegalActions(agentIndex):
-        Returns a list of legal actions for an agent
-        agentIndex=0 means Pacman, ghosts are >= 1
-
-        gameState.generateSuccessor(agentIndex, action):
-        Returns the successor game state after an agent takes an action
-
-        gameState.getNumAgents():
-        Returns the total number of agents in the game
-
-        gameState.isWin():
-        Returns whether or not the game state is a winning state
-
-        gameState.isLose():
-        Returns whether or not the game state is a losing state
-        """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
-'''
 class MinimaxAgent(MultiAgentSearchAgent):
     """
     Minimax agent for Pacman with multiple ghosts
@@ -314,6 +283,75 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
 
         return bestAction
 
+class HybridAgent(MultiAgentSearchAgent):
+    """
+    Un agente que usa Minimax con poda alfa-beta, evaluando los estados
+    con una red neuronal entrenada a partir de partidas previas del jugador.
+    """
+
+    def __init__(self, depth=2):
+        super().__init__(evalFn='scoreEvaluationFunction', depth=depth)
+        self.neural_agent = NeuralAgent("models/pacman_model.pth")  # Se le pasa una instancia de NeuralAgent
+        self.evaluationFunction = self.neural_agent.evaluationFunction
+
+    def getAction(self, gameState: GameState):
+        def alphabeta(agentIndex, depth, gameState, alpha, beta):
+            if gameState.isWin() or gameState.isLose() or depth == self.depth:
+                return self.evaluationFunction(gameState)
+
+            if agentIndex == 0:  # Pacman (maximiza)
+                return maxValue(agentIndex, depth, gameState, alpha, beta)
+            else:  # Fantasmas (minimizan)
+                return minValue(agentIndex, depth, gameState, alpha, beta)
+
+        def maxValue(agentIndex, depth, gameState, alpha, beta):
+            v = float('-inf')
+            legalActions = gameState.getLegalActions(agentIndex)
+            if not legalActions:
+                return self.evaluationFunction(gameState)
+
+            for action in legalActions:
+                successor = gameState.generateSuccessor(agentIndex, action)
+                v = max(v, alphabeta(1, depth, successor, alpha, beta))
+                if v > beta:
+                    return v
+                alpha = max(alpha, v)
+            return v
+
+        def minValue(agentIndex, depth, gameState, alpha, beta):
+            v = float('inf')
+            legalActions = gameState.getLegalActions(agentIndex)
+            if not legalActions:
+                return self.evaluationFunction(gameState)
+
+            nextAgent = agentIndex + 1
+            if nextAgent == gameState.getNumAgents():
+                nextAgent = 0
+                depth += 1
+
+            for action in legalActions:
+                successor = gameState.generateSuccessor(agentIndex, action)
+                v = min(v, alphabeta(nextAgent, depth, successor, alpha, beta))
+                if v < alpha:
+                    return v
+                beta = min(beta, v)
+            return v
+
+        bestAction = None
+        bestScore = float('-inf')
+        alpha = float('-inf')
+        beta = float('inf')
+
+        for action in gameState.getLegalActions(0):
+            successor = gameState.generateSuccessor(0, action)
+            score = alphabeta(1, 0, successor, alpha, beta)
+            if score > bestScore:
+                bestScore = score
+                bestAction = action
+            alpha = max(alpha, score)
+
+        return bestAction
+
 class ExpectimaxAgent(MultiAgentSearchAgent):
     """
       Your expectimax agent (question 4)
@@ -476,7 +514,7 @@ class NeuralAgent(Agent):
         # Factor 1: Distancia a la comida más cercana
         if food:
             min_food_distance = min(manhattanDistance(pacman_pos, food_pos) for food_pos in food)
-            score += 1.0 / (min_food_distance + 1)
+            score += 10.0 / (min_food_distance + 1)
         
         # Factor 2: Proximidad a fantasmas
         for ghost_state in ghost_states:
@@ -485,12 +523,32 @@ class NeuralAgent(Agent):
             
             if ghost_state.scaredTimer > 0:
                 # Si el fantasma está asustado, acercarse a él
-                score += 50 / (ghost_distance + 1)
+                score += 25 / (ghost_distance + 1)
             else:
                 # Si no está asustado, evitarlo
-                if ghost_distance <= 2:
-                    score -= 200  # Gran penalización por estar demasiado cerca
+                if ghost_distance <= 3:
+                    score -= 300  # Gran penalización por estar demasiado cerca
         
+        
+        # Factor 3: Evitar esquinas si no hay comida y hay fantasmas cerca
+        width, height = state.getWalls().width, state.getWalls().height
+        corners = [(0, 0), (0, height - 1), (width - 1, 0), (width - 1, height - 1)]
+
+        for corner in corners:
+            if pacman_pos == corner:
+
+                # ¿Hay fantasmas cerca de la esquina?
+                ghost_near = False
+                for ghost_state in ghost_states:
+                    ghost_pos = ghost_state.getPosition()
+                    if manhattanDistance(corner, ghost_pos) <= 3:
+                        ghost_near = True
+                        break
+
+                # Penalizar si no hay comida y hay fantasmas cerca
+                if ghost_near:
+                    score -= 500
+
         # Combinar la puntuación de la red con la heurística
         neural_score = 0
         for i, action in enumerate(self.idx_to_action.values()):
