@@ -1,6 +1,7 @@
 import csv
 import json
 import os
+import re
 from datetime import datetime
 
 class GameDataCollector:
@@ -101,18 +102,25 @@ class GameDataCollector:
             'timestamp': datetime.now().isoformat()
         }
     
-    def save_game_data(self, game_id):
+    def save_game_data(self, game_id=None):
         """Guarda los datos del juego actual"""
         if self.replay_mode:
             return
-        
+
         if not os.path.exists(self.output_dir):
-            game_id = 0
-        else:
-            # si hay juegos guardados, el id es el siguiente
-            game_id = len(os.listdir(self.output_dir))
+            os.makedirs(self.output_dir)
+
+        # Obtener todos los archivos tipo 'game_*.csv'
+        existing_files = os.listdir(self.output_dir)
+        pattern = re.compile(r"game_(\d+)\.csv")
+        used_ids = sorted(int(pattern.match(f).group(1)) for f in existing_files if pattern.match(f))
+
+        # Encontrar el menor ID libre
+        game_id = 0
+        while game_id in used_ids:
+            game_id += 1
+
         # Crear el nombre del archivo
-        # del timestamp solo nos quedamos con la fecha dia/mes/año
         steps_filename = os.path.join(self.output_dir, f"game_{game_id}.csv")
         
         # Guardar los pasos del juego
