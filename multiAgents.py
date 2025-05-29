@@ -345,40 +345,15 @@ class HybridAgent(Agent):
         for action in gameState.getLegalActions(0):
             successor = gameState.generateSuccessor(0, action)
             score = alphabeta(1, 0, successor, alpha, beta)
+            if action == Directions.STOP:
+                score -= 100000   #para evitar que se quede quieto
+
             if score > bestScore:
                 bestScore = score
                 bestAction = action
             alpha = max(alpha, score)
 
         return bestAction
-
-class ExpectimaxAgent(MultiAgentSearchAgent):
-    """
-      Your expectimax agent (question 4)
-    """
-
-    def getAction(self, gameState: GameState):
-        """
-        Returns the expectimax action using self.depth and self.evaluationFunction
-
-        All ghosts should be modeled as choosing uniformly at random from their
-        legal moves.
-        """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
-
-def betterEvaluationFunction(currentGameState: GameState):
-    """
-    Your extreme ghost-hunting, pellet-nabbing, food-gobbling, unstoppable
-    evaluation function (question 5).
-
-    DESCRIPTION: <write something here so we know what you did>
-    """
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
-
-# Abbreviation
-better = betterEvaluationFunction
 
 
 ###########################################################################
@@ -481,6 +456,16 @@ class NeuralAgent(Agent):
         numeric_map = numeric_map / 6.0
         
         return numeric_map
+    
+    @staticmethod
+    def count_legal_moves_from_pos(state, pos):
+        x, y = int(pos[0]), int(pos[1])
+        count = 0
+        walls = state.getWalls()
+        for dx, dy in [(-1,0), (1,0), (0,-1), (0,1)]:
+            if not walls[x+dx][y+dy]:
+                count += 1
+        return count
 
     def evaluationFunction(self, state):
         """
@@ -503,43 +488,31 @@ class NeuralAgent(Agent):
         pacman_pos = state.getPacmanPosition()
         food_list = state.getFood().asList()
         ghost_states = state.getGhostStates()
-        num_food = state.getNumFood()
-
         score = state.getScore()
+        
+        num_ways_out = self.count_legal_moves_from_pos(state, pacman_pos)
+        if num_ways_out <= 2:
+            score -= 400  # Penaliza estar en un rincón
 
         if food_list:
             min_food_distance = min(manhattanDistance(pacman_pos, food) for food in food_list)
-            score += 500.0 / (min_food_distance + 1)
-
-        if pacman_pos in food_list:
-            score += 1000
-
-        
-        if num_food > 0:
-            score += 1000.0 / num_food
-        
-        if num_food == 0:
-            score += 10000.0
-
+            score += 700.0 / (min_food_distance + 1)
+            
         for ghost in ghost_states:
             ghost_pos = ghost.getPosition()
             ghost_dist = manhattanDistance(pacman_pos, ghost_pos)
-            if ghost.scaredTimer > 0:
-                score += 1000
-            elif ghost_dist <=6:
-                score -= 500  # evitar si están cerca y no asustados
+            if ghost_dist <= 4:
+                score -= 700.0 / (ghost_dist + 1)   # evitar si están cerca 
+            #else:
+                #score += 200.0 / (ghost_dist + 1)  #premiar si se aleja de ellos
 
+        #score += 2 * len(legal_actions)
 
-
-       
-        score += 2 * len(legal_actions)
-
-       
         neural_score = 0
         for i, action in enumerate(self.idx_to_action.values()):
             neural_score += probabilities[i] * 100
 
-        final_score = 0.8 * score + 0.2 * neural_score
+        final_score = 0.9 * score + 0.1 * neural_score
         print(final_score)
         return final_score
 
@@ -611,6 +584,36 @@ class NeuralAgent(Agent):
         
         # Devolver la mejor acción
         return successors[0][0]
+
+
+class ExpectimaxAgent(MultiAgentSearchAgent):
+    """
+      Your expectimax agent (question 4)
+    """
+
+    def getAction(self, gameState: GameState):
+        """
+        Returns the expectimax action using self.depth and self.evaluationFunction
+
+        All ghosts should be modeled as choosing uniformly at random from their
+        legal moves.
+        """
+        "*** YOUR CODE HERE ***"
+        util.raiseNotDefined()
+
+def betterEvaluationFunction(currentGameState: GameState):
+    """
+    Your extreme ghost-hunting, pellet-nabbing, food-gobbling, unstoppable
+    evaluation function (question 5).
+
+    DESCRIPTION: <write something here so we know what you did>
+    """
+    "*** YOUR CODE HERE ***"
+    util.raiseNotDefined()
+
+# Abbreviation
+better = betterEvaluationFunction
+
 
 # Definir una función para crear el agente
 def createNeuralAgent(model_path="models/pacman_model.pth"):
