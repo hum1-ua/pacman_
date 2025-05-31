@@ -602,7 +602,7 @@ def readCommand(argv):
     args = dict()
 
     # Fix the random seed
-    random.seed('74')
+    random.seed('102')
 
     # Choose a layout
     args['layout'] = layout.getLayout(options.layout)
@@ -743,9 +743,9 @@ def runGames(layout, pacman, ghosts, display, numGames, record, numTraining=0, c
 
     # Fijar semilla consistente
 
-    seed = '74'  # o cualquier valor fijo
+    seed = '102'  # o cualquier valor fijo
 
-    random.seed(74)
+    random.seed(102)
     ###################################################
     for i in range(numGames):
         beQuiet = i < numTraining

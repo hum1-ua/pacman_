@@ -18,7 +18,7 @@ import os
 from util import manhattanDistance
 from game import Directions
 import random, util
-random.seed(74)  # For reproducibility
+random.seed(102)  # For reproducibility
 from game import Agent
 from pacman import GameState
 
@@ -502,9 +502,7 @@ class NeuralAgent(Agent):
             ghost_pos = ghost.getPosition()
             ghost_dist = manhattanDistance(pacman_pos, ghost_pos)
             if ghost_dist <= 6:
-                score -= 700.0 / (ghost_dist + 1)   # evitar si están cerca 
-            #else:
-                #score += 200.0 / (ghost_dist + 1)  #premiar si se aleja de ellos
+                score -= 700.0 / (ghost_dist + 1)  
 
         score += 2 * len(legal_actions)
 
@@ -512,7 +510,7 @@ class NeuralAgent(Agent):
         for i, action in enumerate(self.idx_to_action.values()):
             neural_score += probabilities[i] * 100
 
-        final_score = 0.9 * score + 0.1 * neural_score
+        final_score = 0.7 * score + 0.3 * neural_score
         print(final_score)
         return final_score
 
