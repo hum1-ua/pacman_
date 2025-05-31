@@ -18,7 +18,7 @@ import os
 from util import manhattanDistance
 from game import Directions
 import random, util
-random.seed(100)  # For reproducibility
+random.seed(45)  # For reproducibility
 from game import Agent
 from pacman import GameState
 
@@ -290,7 +290,7 @@ class HybridAgent(Agent):
     """
 
     def __init__(self, depth=3):
-        self.neural_agent = NeuralAgent("models/pacman_model.pth")  # Se le pasa una instancia de NeuralAgent
+        self.neural_agent = NeuralAgent("models/pacman_model.pth")  
         self.evaluationFunction = self.neural_agent.evaluationFunction
         self.depth = depth
 
@@ -346,7 +346,7 @@ class HybridAgent(Agent):
             successor = gameState.generateSuccessor(0, action)
             score = alphabeta(1, 0, successor, alpha, beta)
             if action == Directions.STOP:
-                score -= 100000   #para evitar que se quede quieto
+                score -= 100000 
 
             if score > bestScore:
                 bestScore = score
@@ -492,7 +492,7 @@ class NeuralAgent(Agent):
         
         num_ways_out = self.count_legal_moves_from_pos(state, pacman_pos)
         if num_ways_out <= 2:
-            score -= 400  # Penaliza estar en un rincón
+            score -= 400  
 
         if food_list:
             min_food_distance = min(manhattanDistance(pacman_pos, food) for food in food_list)
