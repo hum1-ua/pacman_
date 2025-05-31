@@ -18,7 +18,7 @@ import os
 from util import manhattanDistance
 from game import Directions
 import random, util
-random.seed(45)  # For reproducibility
+random.seed(74)  # For reproducibility
 from game import Agent
 from pacman import GameState
 
@@ -492,7 +492,7 @@ class NeuralAgent(Agent):
         
         num_ways_out = self.count_legal_moves_from_pos(state, pacman_pos)
         if num_ways_out <= 2:
-            score -= 400  
+            score -= 300  
 
         if food_list:
             min_food_distance = min(manhattanDistance(pacman_pos, food) for food in food_list)
@@ -501,12 +501,12 @@ class NeuralAgent(Agent):
         for ghost in ghost_states:
             ghost_pos = ghost.getPosition()
             ghost_dist = manhattanDistance(pacman_pos, ghost_pos)
-            if ghost_dist <= 4:
+            if ghost_dist <= 6:
                 score -= 700.0 / (ghost_dist + 1)   # evitar si están cerca 
             #else:
                 #score += 200.0 / (ghost_dist + 1)  #premiar si se aleja de ellos
 
-        #score += 2 * len(legal_actions)
+        score += 2 * len(legal_actions)
 
         neural_score = 0
         for i, action in enumerate(self.idx_to_action.values()):
