@@ -544,9 +544,6 @@ class NeuralAgent(Agent):
             score += 15.0 / (min_food_distance + 1)**0.8
             score += 5.0 / (total_food_distance + 1)
 
-        if pacman_pos in food_list:
-            score += 25  # comer comida
-
         if num_food > 0:
             score += 20.0 / num_food
             if num_food > 30:
